@@ -1,181 +1,275 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rotinas Mágicas da Alice</title>
+    <title>Planner de Rotinas Infantis - Semanal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Quicksand', sans-serif;
-            background-color: #fdfcf0;
+            background-color: #f0f9ff;
             background-image: radial-gradient(#e0f2fe 1px, transparent 1px);
-            background-size: 30px 30px;
+            background-size: 20px 20px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
-        .card-task {
-            transition: all 0.2s ease-out;
-            cursor: pointer;
-            user-select: none;
+        .card-bounce {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .card-task:active { transform: scale(0.95); }
+        .card-bounce:hover {
+            transform: scale(1.02);
+        }
         .task-done {
             background-color: #dcfce7 !important;
             border-color: #4ade80 !important;
+            opacity: 0.8;
         }
-        .day-active {
-            background-color: #0ea5e9 !important;
-            color: white !important;
-            box-shadow: 0 4px 10px rgba(14, 165, 233, 0.4);
+        .floating {
+            animation: floating 3s ease-in-out infinite;
         }
-        .animate-pop { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes pop {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes floating {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .day-btn.active {
+            background-color: #0ea5e9;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+
+        /* Ajustes para Impressão */
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .max-w-4xl { max-width: 100% !important; width: 100% !important; margin: 0 !important; }
+            .card-bounce { 
+                border: 2px solid #e2e8f0 !important; 
+                break-inside: avoid;
+                box-shadow: none !important;
+            }
+            .grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+            .checkbox { border: 2px solid #cbd5e1 !important; background: white !important; }
+            .checkbox svg { display: none !important; }
+        }
     </style>
 </head>
-<body class="pb-32">
+<body class="min-h-screen p-4 md:p-8 pb-32">
 
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
         <!-- Cabeçalho -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-sky-600 mb-2">Rotinas da Alice ✨</h1>
-            <div id="date-display" class="text-sky-400 font-bold text-lg uppercase tracking-widest"></div>
+        <header class="text-center mb-6 relative">
+            <div class="absolute -top-4 -left-4 floating text-4xl no-print">⭐</div>
+            <div class="absolute -top-2 -right-4 floating text-4xl no-print" style="animation-delay: 1s;">☁️</div>
+            <h1 class="text-4xl md:text-5xl font-bold text-sky-600 mb-2 drop-shadow-sm">
+                Rotinas Mágicas da Alice ✨
+            </h1>
+            <p id="current-day-display" class="text-sky-400 font-bold tracking-wide uppercase text-lg">Segunda-Feira</p>
         </header>
 
-        <!-- Seletor de Dias -->
-        <div class="flex overflow-x-auto gap-2 pb-4 mb-8 no-scrollbar justify-center">
-            <button onclick="setDay('Segunda')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Seg</button>
-            <button onclick="setDay('Terça')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Ter</button>
-            <button onclick="setDay('Quarta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Qua</button>
-            <button onclick="setDay('Quinta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Qui</button>
-            <button onclick="setDay('Sexta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Sex</button>
-            <button onclick="setDay('Sábado')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-orange-100 font-bold text-orange-500 transition-all">Sáb</button>
-            <button onclick="setDay('Domingo')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-orange-100 font-bold text-orange-500 transition-all">Dom</button>
+        <!-- Seletor de Dias da Semana -->
+        <div class="flex flex-wrap justify-center gap-2 mb-10 no-print">
+            <button onclick="changeDay('Segunda')" class="day-btn active px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Seg</button>
+            <button onclick="changeDay('Terça')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Ter</button>
+            <button onclick="changeDay('Quarta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Qua</button>
+            <button onclick="changeDay('Quinta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Qui</button>
+            <button onclick="changeDay('Sexta')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-100 font-bold text-sky-600 transition-all">Sex</button>
+            <button onclick="changeDay('Sábado')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-200 font-bold text-orange-500 transition-all">Sáb</button>
+            <button onclick="changeDay('Domingo')" class="day-btn px-4 py-2 rounded-full bg-white border-2 border-sky-200 font-bold text-orange-500 transition-all">Dom</button>
         </div>
 
-        <!-- Conteúdo Principal -->
-        <div id="planner-grid" class="space-y-10"></div>
+        <!-- Conteúdo do Planner -->
+        <div id="planner-container" class="space-y-12">
+            <!-- Gerado dinamicamente via JavaScript -->
+        </div>
 
-        <!-- Botões de Reset -->
-        <div class="mt-12 mb-20 flex flex-col items-center gap-4">
+        <!-- Botões de Ação -->
+        <div class="mt-12 flex flex-col items-center gap-4 no-print">
+            <button onclick="window.print()" class="bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                IMPRIMIR PLANNER
+            </button>
             <button onclick="resetCurrentDay()" class="text-xs text-gray-400 hover:text-red-400 underline transition-colors">Recomeçar este dia</button>
-            <button onclick="resetFullWeek()" class="text-[10px] text-gray-300 hover:text-red-500 uppercase tracking-tighter transition-colors font-bold">Zerar a semana toda</button>
         </div>
 
-        <!-- Barra de Progresso Inferior -->
-        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-lg bg-white/90 backdrop-blur-md border-2 border-sky-200 p-4 rounded-[2rem] shadow-2xl flex items-center justify-between z-50">
-            <div class="flex-1 mr-4">
-                <p id="progress-label" class="text-sky-600 font-bold text-xs mb-1 uppercase tracking-tight">PROGRESSO</p>
-                <div class="w-full h-4 bg-gray-100 rounded-full overflow-hidden border border-gray-100">
-                    <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-400 to-green-500 transition-all duration-700" style="width: 0%"></div>
+        <!-- Barra de Progresso Fixa -->
+        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-11/12 max-w-lg bg-white/90 backdrop-blur-md border-2 border-sky-200 p-4 rounded-3xl shadow-xl flex items-center justify-between z-50 no-print">
+            <div>
+                <span id="progress-label" class="text-sky-600 font-bold block text-sm">Progresso de Segunda</span>
+                <div class="w-40 md:w-48 h-3 bg-gray-200 rounded-full mt-1 overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
-            <div id="percent-text" class="text-2xl font-black text-sky-600">0%</div>
+            <div class="text-right">
+                <span id="progress-text" class="text-2xl font-bold text-sky-600">0%</span>
+            </div>
         </div>
     </div>
 
     <script>
-        const config = [
-            { titulo: "Manhã", icone: "☀️", cor: "text-yellow-600", tarefas: ["Trocar de roupa", "Tomar o lanche", "Escovar os dentes", "Pentear o cabelo", "Ir para a escola"] },
-            { titulo: "Tarde", icone: "🌤️", cor: "text-orange-600", tarefas: ["Tomar banho", "Hora do brinquedo", "Hora do jantar", "Hora livre"] },
-            { titulo: "Noite", icone: "🌙", cor: "text-indigo-600", tarefas: ["Escovar os dentes", "Colocar o pijama", "Ler uma história", "Fazer oração"] },
-            { titulo: "Bônus", icone: "🏆", cor: "text-pink-600", tarefas: ["Cuidar dos brinquedos", "Não gritar ou brigar", "Obedecer papai e mamãe"] }
+        // Definição das tarefas e ícones
+        const rotinasBase = [
+            {
+                periodo: "Manhã",
+                icone: "☀️",
+                texto: "text-yellow-600",
+                tarefas: ["Trocar de roupa", "Tomar o lanche", "Escovar os dentes", "Pentear o cabelo", "Ir para a escola"]
+            },
+            {
+                periodo: "Tarde",
+                icone: "🌤️",
+                texto: "text-orange-600",
+                tarefas: ["Tomar banho", "Hora do brinquedo", "Hora do jantar", "Hora livre"]
+            },
+            {
+                periodo: "Noite",
+                icone: "🌙",
+                texto: "text-indigo-600",
+                tarefas: ["Escovar os dentes", "Colocar o pijama", "Ler uma história", "Fazer oração"]
+            },
+            {
+                periodo: "Bónus",
+                icone: "🏆",
+                texto: "text-pink-600",
+                tarefas: ["Cuidar dos brinquedos", "Não gritar ou brigar", "Obedecer ao papai e mamãe"]
+            }
         ];
 
         let diaAtual = 'Segunda';
-        let dados = JSON.parse(localStorage.getItem('planner_alice_v2')) || {
+        let estadoTarefas = JSON.parse(localStorage.getItem('planner_alice_v2')) || {
             'Segunda': {}, 'Terça': {}, 'Quarta': {}, 'Quinta': {}, 'Sexta': {}, 'Sábado': {}, 'Domingo': {}
         };
 
-        function setDay(dia) {
-            diaAtual = dia;
-            document.querySelectorAll('.day-btn').forEach(b => {
-                b.classList.remove('day-active');
-                if(b.innerText.startsWith(dia.substring(0,3))) b.classList.add('day-active');
+        function saveToStorage() {
+            localStorage.setItem('planner_alice_v2', JSON.stringify(estadoTarefas));
+        }
+
+        function changeDay(novoDia) {
+            diaAtual = novoDia;
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.innerText.startsWith(novoDia.substring(0, 3)));
             });
-            document.getElementById('date-display').innerText = (dia === 'Sábado' || dia === 'Domingo') ? dia : dia + '-Feira';
-            document.getElementById('progress-label').innerText = `Progresso de ${dia}`;
-            render();
+            document.getElementById('current-day-display').innerText = (novoDia === 'Sábado' || novoDia === 'Domingo') ? novoDia : novoDia + '-Feira';
+            document.getElementById('progress-label').innerText = `Progresso de ${novoDia}`;
+            renderPlanner();
         }
 
-        function toggleTask(tarefa) {
-            dados[diaAtual][tarefa] = !dados[diaAtual][tarefa];
-            localStorage.setItem('planner_alice_v2', JSON.stringify(dados));
-            if(dados[diaAtual][tarefa]) {
-                confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 }, colors: ['#4ade80', '#38bdf8'] });
-            }
-            render();
-        }
+        function renderPlanner() {
+            const container = document.getElementById('planner-container');
+            container.innerHTML = '';
+            let totalNoDia = 0;
+            let concluidasNoDia = 0;
 
-        function resetCurrentDay() {
-            if(confirm("Queres recomeçar o dia de " + diaAtual + "?")) {
-                dados[diaAtual] = {};
-                localStorage.setItem('planner_alice_v2', JSON.stringify(dados));
-                render();
-            }
-        }
+            rotinasBase.forEach((seccao) => {
+                // Filtra a tarefa "Ir para a escola" se for Sábado ou Domingo
+                const tarefasFiltradas = seccao.tarefas.filter(t => {
+                    if ((diaAtual === 'Sábado' || diaAtual === 'Domingo') && t === "Ir para a escola") {
+                        return false;
+                    }
+                    return true;
+                });
 
-        function resetFullWeek() {
-            if(confirm("ATENÇÃO: Queres apagar o progresso de TODOS os dias da semana?")) {
-                dados = { 'Segunda': {}, 'Terça': {}, 'Quarta': {}, 'Quinta': {}, 'Sexta': {}, 'Sábado': {}, 'Domingo': {} };
-                localStorage.setItem('planner_alice_v2', JSON.stringify(dados));
-                render();
-            }
-        }
+                if (tarefasFiltradas.length === 0) return;
 
-        function render() {
-            const grid = document.getElementById('planner-grid');
-            grid.innerHTML = '';
-            let total = 0, feitos = 0;
-
-            config.forEach(sec => {
                 const sectionHtml = `
-                    <div class="animate-pop">
-                        <div class="flex items-center gap-2 mb-4">
-                            <span class="text-2xl">${sec.icone}</span>
-                            <h2 class="text-xl font-bold ${sec.cor}">${sec.titulo}</h2>
+                    <section class="animate-in fade-in duration-500">
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="text-3xl">${seccao.icone}</span>
+                            <h2 class="text-2xl font-bold ${seccao.texto}">${seccao.periodo}</h2>
+                            <div class="h-1 flex-grow bg-gray-200 rounded-full opacity-30"></div>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            ${sec.tarefas.map(t => {
-                                total++;
-                                const isDone = dados[diaAtual][t];
-                                if(isDone) feitos++;
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${tarefasFiltradas.map(tarefa => {
+                                totalNoDia++;
+                                const estaConcluida = estadoTarefas[diaAtual][tarefa] || false;
+                                if(estaConcluida) concluidasNoDia++;
+
                                 return `
-                                    <div onclick="toggleTask('${t}')" class="card-task p-4 rounded-2xl border-2 flex items-center justify-between bg-white ${isDone ? 'task-done' : 'border-sky-50 shadow-sm'}">
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-lg">${getEmoji(t)}</span>
-                                            <span class="font-semibold text-gray-700">${t}</span>
+                                    <div 
+                                        onclick="toggleTask(this, '${tarefa}')" 
+                                        class="card-bounce cursor-pointer p-5 rounded-2xl border-2 flex items-center justify-between shadow-sm transition-all group ${estaConcluida ? 'task-done bg-green-50 border-green-400' : 'bg-white border-sky-100 hover:border-sky-300'}"
+                                    >
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                                                ${getIconForTask(tarefa)}
+                                            </div>
+                                            <span class="font-semibold text-gray-700">${tarefa}</span>
                                         </div>
-                                        <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center ${isDone ? 'bg-green-500 border-green-500' : 'border-gray-200'}">
-                                            ${isDone ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                                        <div class="checkbox w-7 h-7 rounded-full border-2 flex items-center justify-center transition-colors ${estaConcluida ? 'bg-green-500 border-green-500' : 'border-gray-300'}">
+                                            <svg class="w-4 h-4 text-white ${estaConcluida ? '' : 'hidden'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                            </svg>
                                         </div>
                                     </div>
                                 `;
                             }).join('')}
                         </div>
-                    </div>
+                    </section>
                 `;
-                grid.innerHTML += sectionHtml;
+                container.innerHTML += sectionHtml;
             });
-
-            const pct = Math.round((feitos/total)*100);
-            document.getElementById('progress-bar').style.width = pct + '%';
-            document.getElementById('percent-text').innerText = pct + '%';
-            if(pct === 100) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            updateProgress(concluidasNoDia, totalNoDia);
         }
 
-        function getEmoji(t) {
-            const map = { "Trocar de roupa": "👕", "Tomar o lanche": "🍎", "Escovar os dentes": "🪥", "Pentear o cabelo": "🪮", "Ir para a escola": "🎒", "Tomar banho": "🛀", "Hora do brinquedo": "🧸", "Hora do jantar": "🍝", "Hora livre": "🎨", "Colocar o pijama": "💤", "Ler uma história": "📚", "Fazer oração": "🙏", "Cuidar dos brinquedos": "🧹", "Não gritar ou brigar": "🤫", "Obedecer papai e mamãe": "❤️" };
-            return map[t] || "✨";
+        function toggleTask(element, tarefa) {
+            const estaConcluida = !estadoTarefas[diaAtual][tarefa];
+            estadoTarefas[diaAtual][tarefa] = estaConcluida;
+            saveToStorage();
+            
+            if (estaConcluida) {
+                confetti({
+                    particleCount: 40,
+                    spread: 70,
+                    origin: { y: 0.8 },
+                    colors: ['#4ade80', '#fbbf24', '#38bdf8']
+                });
+            }
+            renderPlanner();
         }
 
-        const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-        setDay(diasSemana[new Date().getDay()]);
+        function resetCurrentDay() {
+            if(confirm("Queres recomeçar as tarefas de " + diaAtual + "?")) {
+                estadoTarefas[diaAtual] = {};
+                saveToStorage();
+                renderPlanner();
+            }
+        }
+
+        function updateProgress(concluidas, total) {
+            const percent = Math.round((concluidas / total) * 100) || 0;
+            document.getElementById('progress-bar').style.width = percent + '%';
+            document.getElementById('progress-text').innerText = percent + '%';
+            
+            if (percent === 100 && total > 0) {
+                confetti({
+                    particleCount: 150,
+                    spread: 100,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function getIconForTask(name) {
+            const map = {
+                "Trocar de roupa": "👕", "Tomar o lanche": "🍎", "Escovar os dentes": "🪥",
+                "Pentear o cabelo": "🪮", "Ir para a escola": "🎒", "Tomar banho": "🛀",
+                "Hora do brinquedo": "🧸", "Hora do jantar": "🍝", "Hora livre": "🎨",
+                "Colocar o pijama": "💤", "Ler uma história": "📚", "Fazer oração": "🙏",
+                "Cuidar dos brinquedos": "🧹", "Não gritar ou brigar": "🤫", "Obedecer ao papai e mamãe": "❤️"
+            };
+            return map[name] || "✨";
+        }
+
+        window.onload = () => {
+            const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            changeDay(dias[new Date().getDay()]);
+        };
     </script>
 </body>
-</html># planner-alice
+</html>
